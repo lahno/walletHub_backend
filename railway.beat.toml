@@ -1,0 +1,9 @@
+[build]
+builder = "nixpacks"
+buildCommand = "python -m pip install -r requirements.txt"
+
+[deploy]
+startCommand = "celery -A app beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler"
+
+[variables]
+RAILWAY_ENVIRONMENT_NAME = "production"

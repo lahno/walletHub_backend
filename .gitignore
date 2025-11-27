@@ -1,0 +1,6 @@
+.venv
+.idea
+app/.env
+db.sqlite3
+dump.rdb
+logs/

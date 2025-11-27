@@ -1,0 +1,11 @@
+[build]
+builder = "nixpacks"
+buildCommand = "python -m pip install -r requirements.txt"
+
+[deploy]
+startCommand = "python manage.py collectstatic --no-input && uvicorn app.asgi:application --host 0.0.0.0 --port $PORT --workers 4"
+healthcheckPath = "/api/get-version/"
+healthcheckTimeout = 100
+
+[variables]
+RAILWAY_ENVIRONMENT_NAME = "production"
