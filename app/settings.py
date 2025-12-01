@@ -208,7 +208,7 @@ ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
 CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",
     "http://localhost:5173",
-    "https://app.ofapp.tech",
+    "https://app.wallethub.tech",
     'https://healthcheck.railway.app',
 ]
 
@@ -216,8 +216,8 @@ CORS_ALLOWED_ORIGINS = [
 CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:5173",
     "http://localhost:5173",
-    "https://backend.ofapp.tech",
-    "https://app.ofapp.tech",
+    "https://backend.wallethub.tech",
+    "https://app.wallethub.tech",
     'https://healthcheck.railway.app',
 ]
 
