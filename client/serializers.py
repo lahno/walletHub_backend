@@ -4,7 +4,7 @@ from wallet.serializers import WalletSerializer
 
 
 class ClientSerializer(serializers.ModelSerializer):
-    wallets = WalletSerializer(many=True, read_only=True)
+    wallets = serializers.SerializerMethodField()
 
     class Meta:
         model = Client
@@ -17,3 +17,7 @@ class ClientSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+    def get_wallets(self, obj):
+        qs = obj.wallets.filter(status=True)
+        return WalletSerializer(qs, many=True).data

@@ -92,6 +92,65 @@ class WalletApiClient:
         resp = self._client.post(url, json=payload, headers=self._headers())
         return self._handle_response(resp)
 
+    def send_transaction(
+        self,
+        wallet_type: WalletTypeLiteral,
+        from_private_key: str,
+        to_address: str,
+        amount: str,  # Сумма в строковом формате (например, "0.1" для BTC или в wei для ETH)
+        fee: str = None,  # Опционально для BTC/Tron
+        gas_limit: str = None,  # Опционально для ETH/Tron
+        gas_price: str = None,  # Опционально для ETH
+    ) -> str:
+        """
+        Отправляет транзакцию на указанный адрес (например, депозитный счёт Binance для конвертации).
+        Возвращает ID транзакции.
+        """
+        if wallet_type == "bitcoin":
+            url = f"{self.base_url}/bitcoin/transaction"
+            payload = {
+                "fromAddress": [
+                    {
+                        "privateKey": from_private_key,
+                    }
+                ],
+                "to": [
+                    {
+                        "address": to_address,
+                        "value": float(amount),
+                    }
+                ],
+            }
+            if fee:
+                payload["fee"] = fee
+        elif wallet_type == "ethereum":
+            url = f"{self.base_url}/ethereum/transaction"
+            payload = {
+                "fromPrivateKey": from_private_key,
+                "to": to_address,
+                "value": amount,  # Ожидается в wei
+            }
+            if gas_limit:
+                payload["gasLimit"] = gas_limit
+            if gas_price:
+                payload["gasPrice"] = gas_price
+        elif wallet_type == "tron":
+            url = f"{self.base_url}/tron/transaction"
+            payload = {
+                "fromPrivateKey": from_private_key,
+                "to": to_address,
+                "amount": amount,  # В sun для TRX
+            }
+            if fee:
+                payload["feeLimit"] = fee
+            if gas_limit:
+                payload["gasLimit"] = gas_limit  # Адаптировать под Tron, если нужно
+        else:
+            raise ValueError(f"Unsupported wallet type: {wallet_type}")
+
+        resp = self._client.post(url, json=payload, headers=self._headers())
+        data = self._handle_response(resp)
+        return data.get("txId", data.get("hash"))  # Возвращает txId или hash в зависимости от сети
 
     def close(self) -> None:
         self._client.close()

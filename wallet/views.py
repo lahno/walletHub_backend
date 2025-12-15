@@ -1,5 +1,5 @@
 from django.core.exceptions import PermissionDenied
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, NotFound
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework import status, permissions
@@ -64,14 +64,14 @@ class WalletView(APIView):
             raise ValidationError({"client": "Указанный client не найден."})
 
         # 2. Работа с внешним API
-        api = WalletApiClient(
+        wallet_api = WalletApiClient(
             base_url=settings.TATUM_BASE_URL,
             api_key=settings.TATUM_API_KEY,
         )
 
         try:
             # 2.1. Генерация mnemonic и xpub
-            mnemonic_xpub = api.generate_mnemonic_and_xpub(wallet_type)
+            mnemonic_xpub = wallet_api.generate_mnemonic_and_xpub(wallet_type)
             mnemonic = mnemonic_xpub["mnemonic"]
             xpub = mnemonic_xpub["xpub"]
 
@@ -79,14 +79,14 @@ class WalletView(APIView):
             index = 0
 
             # 2.2. Генерация приватного ключа
-            private_key = api.generate_private_key(
+            private_key = wallet_api.generate_private_key(
                 wallet_type=wallet_type,
                 mnemonic=mnemonic,
                 index=index,
             )
 
             # 2.3. Генерация адреса
-            address = api.generate_address(
+            address = wallet_api.generate_address(
                 wallet_type=wallet_type,
                 xpub=xpub,
                 index=index,
@@ -94,12 +94,12 @@ class WalletView(APIView):
 
             # 2.4 Создаём подписку на транзакции
             chain = self.CHAIN_BY_WALLET_TYPE.get(wallet_type)
-            subscription = api.create_subscription(chain, settings.TATUM_WEBHOOK_URL, address)
+            subscription = wallet_api.create_subscription(chain, settings.TATUM_WEBHOOK_URL, address)
 
         except WalletApiError as e:
             raise ValidationError({"detail": f"Ошибка при создании кошелька во внешнем сервисе: {e}"})
         finally:
-            api.close()
+            wallet_api.close()
 
         # 3. Сохраняем кошелёк в БД
         wallet = Wallet.objects.create(
@@ -119,3 +119,19 @@ class WalletView(APIView):
         # 4. Возвращаем данные через ваш сериализатор
         serializer = WalletSerializer(wallet)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def delete(self, request, pk):
+        """
+        "Мягкое удаление": деактивировать кошелёк (status=False),
+        при этом доступ разрешён только к кошелькам текущего пользователя.
+        """
+        user = request.user
+        try:
+            wallet = self.get_queryset(user).get(pk=pk)
+        except Wallet.DoesNotExist:
+            return Response(data={"message": "Wallet not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        wallet.status = False
+        wallet.save(update_fields=["status", "updated_at"])
+        return Response(status=status.HTTP_204_NO_CONTENT)
+

@@ -22,7 +22,10 @@ TATUM_WEBHOOK_URL = os.getenv("TATUM_WEBHOOK_URL", default=None)
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", default=None)
 
-FRONTEND_URL = os.getenv("FRONTEND_URL", default="https://app.ofapp.tech")
+BINANCE_API_KEY = os.getenv("BINANCE_API_KEY", default=None)
+BINANCE_API_SECRET = os.getenv("BINANCE_API_SECRET", default=None)
+
+FRONTEND_URL = os.getenv("FRONTEND_URL", default="https://app.wallethub.tech")
 
 # Настройки для использования SMTP сервера
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
