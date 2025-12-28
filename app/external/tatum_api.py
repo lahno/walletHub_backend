@@ -77,12 +77,13 @@ class WalletApiClient:
         address: str,
     ) -> Dict[str, Any]:
         """
-        Создаёт подписку вида ADDRESS_TRANSACTION для указанного адреса.
+        Создаёт подписку вида ADDRESS_TRANSACTION v4: (ADDRESS_EVENT) для указанного адреса.
         chain: 'TRON', 'BTC', 'ETH' и т.п. (как ожидает Tatum)
         """
-        url = f"{self.base_url}/subscription"
+        # url = f"{self.base_url}/subscription"
+        url = f"https://api.tatum.io/v4/subscription"
         payload: Dict[str, Any] = {
-            "type": "ADDRESS_TRANSACTION",
+            "type": "ADDRESS_EVENT",
             "attr": {
                 "chain": chain,
                 "url": url_callback,
