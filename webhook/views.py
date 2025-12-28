@@ -25,30 +25,43 @@ class TatumWebhookView(APIView):
         logger.info("Received Tatum webhook: %s", payload)
 
         # 1. Достаём нужные поля
-        subscription_id = payload.get("subscriptionId")
         address = payload.get("address")
+        asset = payload.get("asset")
 
-        if not subscription_id or not address:
+        if not address:
             logger.warning(
-                "Webhook without subscriptionId or address: %s",
+                "Webhook without address: %s",
                 payload,
             )
-            # всё равно отвечаем 200/OK, чтобы Tatum не спамил ретраями
             return Response("OK", status=status.HTTP_200_OK)
 
-        # 2. Ищем Wallet
+        # Сопоставляем asset из Tatum с типом в нашей модели
+        asset_to_type = {
+            "TRON": Wallet.WalletType.TRON,
+            "ETH": Wallet.WalletType.ETH,
+            "BTC": Wallet.WalletType.BTC,
+        }
+        wallet_type = asset_to_type.get(asset)
+
+        # 2. Ищем Wallet по адресу и (опционально) типу
         try:
-            wallet = Wallet.objects.select_related("client").get(
-                subscription_id=subscription_id,
-                address=address,
-            )
+            filters = {"address": address}
+            if wallet_type:
+                filters["type"] = wallet_type
+
+            wallet = Wallet.objects.select_related("client").get(**filters)
         except Wallet.DoesNotExist:
             logger.warning(
-                "Wallet not found for subscription %s and address %s",
-                subscription_id,
+                "Wallet not found for address %s (asset: %s)",
+                address,
+                asset,
+            )
+            return Response("OK", status=status.HTTP_200_OK)
+        except Wallet.MultipleObjectsReturned:
+            logger.error(
+                "Multiple wallets found for address %s",
                 address,
             )
-            # тоже 200/OK, иначе Tatum будет пытаться снова
             return Response("OK", status=status.HTTP_200_OK)
 
         # 3. Отправляем уведомление пользователю
